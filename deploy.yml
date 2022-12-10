@@ -1,0 +1,50 @@
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: watcher
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: watcher
+rules:
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
+  verbs: ["list", "get", "watch"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: watcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: watcher
+subjects:
+- kind: ServiceAccount
+  name: watcher
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: watcher
+  labels:
+    app: watcher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: watcher
+  template:
+    metadata:
+      labels:
+        app: watcher
+    spec:
+      containers:
+      - name: watcher
+        image: ghcr.io/alpeb/watcher:v3
+        env:
+        - name: GOGC
+          value: "1"
+      serviceAccountName: watcher
